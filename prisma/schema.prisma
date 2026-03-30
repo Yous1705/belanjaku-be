@@ -81,9 +81,9 @@ model Product {
 model Address {
   id        Int      @id @default(autoincrement())
   userId    Int
-  address   String
-  city      String
-  postal    String
+  address   String?
+  city      String?
+  postal    String?
 
   user      User     @relation(fields: [userId], references: [id])
 }

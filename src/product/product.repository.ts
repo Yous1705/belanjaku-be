@@ -41,4 +41,10 @@ export class ProductRepository {
       },
     });
   }
+
+  delete(slug: string, storeId: number) {
+    return this.prisma.product.delete({
+      where: { slug: slug, storeId: storeId },
+    });
+  }
 }

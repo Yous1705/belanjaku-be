@@ -33,6 +33,11 @@ export class ProductController {
     return this.productService.getAllMyProducts(req.user.sub);
   }
 
+  @Get('product-detail/:slug')
+  getProductDetail(@Req() req, @Param('slug') slug: string) {
+    return this.productService.getProductDetail(req.user.sub, slug);
+  }
+
   @Patch('update-product/:slug')
   updateProduct(
     @Req() req,
@@ -40,5 +45,10 @@ export class ProductController {
     @Body() dto: UpdateProductDto,
   ) {
     return this.productService.updateProduct(req.user.sub, slug, dto);
+  }
+
+  @Delete('delete-product/:slug')
+  deleteProduct(@Req() req, @Param('slug') slug: string) {
+    return this.productService.deleteProduct(req.user.sub, slug);
   }
 }

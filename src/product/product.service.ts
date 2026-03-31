@@ -53,6 +53,16 @@ export class ProductService {
     return this.repo.getAllMyProduct(userId);
   }
 
+  async getProductDetail(userId: number, slug: string) {
+    const store = await this.repo.findStoreByUserId(userId);
+
+    if (!store) {
+      throw new NotFoundException('Anda belum memiliki toko');
+    }
+
+    return this.repo.findBySlug(slug);
+  }
+
   async updateProduct(userId: number, slug: string, dto: UpdateProductDto) {
     const store = await this.repo.findStoreByUserId(userId);
 
@@ -82,5 +92,20 @@ export class ProductService {
     }
 
     return await this.repo.updateBySlug(slug, store.id, updateData);
+  }
+
+  async deleteProduct(userId: number, slug: string) {
+    const store = await this.repo.findStoreByUserId(userId);
+
+    if (!store) {
+      throw new NotFoundException('Anda belum memiliki toko');
+    }
+
+    const product = await this.repo.findBySlug(slug);
+    if (!product) {
+      throw new NotFoundException('Produk tidak ditemukan');
+    }
+
+    return this.repo.delete(product.slug, store.id);
   }
 }

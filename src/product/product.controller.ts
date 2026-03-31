@@ -1,0 +1,44 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { ProductService } from './product.service';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+import { Roles } from 'src/auth/guard/roles.decorator';
+import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guard/roles.guard';
+import { Role } from '@prisma/client';
+
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.SELLER)
+@Controller('product')
+export class ProductController {
+  constructor(private readonly productService: ProductService) {}
+
+  @Post('create-product')
+  createProduct(@Req() req, @Body() data: CreateProductDto) {
+    return this.productService.createProduct(req.user.sub, data);
+  }
+
+  @Get('my-products')
+  getAllMyProducts(@Req() req) {
+    return this.productService.getAllMyProducts(req.user.sub);
+  }
+
+  @Patch('update-product/:slug')
+  updateProduct(
+    @Req() req,
+    @Param('slug') slug: string,
+    @Body() dto: UpdateProductDto,
+  ) {
+    return this.productService.updateProduct(req.user.sub, slug, dto);
+  }
+}

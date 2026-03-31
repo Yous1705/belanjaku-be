@@ -23,10 +23,14 @@ export class ProductRepository {
     });
   }
 
-  async findBySlug(slug: string) {
+  findBySlug(slug: string) {
     return this.prisma.product.findUnique({
       where: { slug },
     });
+  }
+
+  findAllProducts() {
+    return this.prisma.product.findMany();
   }
 
   getAllMyProduct(userId: number) {

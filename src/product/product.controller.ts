@@ -38,6 +38,11 @@ export class ProductController {
     return this.productService.getProductDetail(req.user.sub, slug);
   }
 
+  @Get('all-products')
+  getAllProducts() {
+    return this.productService.getAllProducts();
+  }
+
   @Patch('update-product/:slug')
   updateProduct(
     @Req() req,

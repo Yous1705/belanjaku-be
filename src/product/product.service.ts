@@ -108,4 +108,8 @@ export class ProductService {
 
     return this.repo.delete(product.slug, store.id);
   }
+
+  getAllProducts() {
+    return this.repo.findAllProducts();
+  }
 }

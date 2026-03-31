@@ -6,17 +6,24 @@ import {
   Patch,
   Param,
   Delete,
+  Req,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { UpdateAuthDto } from './dto/update-auth.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
+import { RegisterSellerDto } from './dto/register-seller.dto';
+import { UpdateUserDto } from '../user/dto/update-user.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
   @Post('register')
   create(@Body() registerUserDto: RegisterUserDto) {
-    return this.authService.create(registerUserDto);
+    return this.authService.createBuyer(registerUserDto);
+  }
+
+  @Post('register/seller')
+  createSeller(@Body() registerSellerDto: RegisterSellerDto) {
+    return this.authService.createSeller(registerSellerDto);
   }
 
   @Post('login')

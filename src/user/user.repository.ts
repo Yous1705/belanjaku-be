@@ -60,6 +60,10 @@ export class UserRepository {
     });
   }
 
+  update(data: Prisma.UserUpdateInput, where: Prisma.UserWhereUniqueInput) {
+    return this.prisma.user.update({ data, where });
+  }
+
   deleteAddress(userId: number) {
     return this.prisma.user.update({
       where: { id: userId },

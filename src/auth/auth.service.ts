@@ -1,9 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { RegisterUserDto } from './dto/register-user.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { UpdateUserDto } from '../user/dto/update-user.dto';
 import { AuthRepository } from './auth.repository';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { RegisterSellerDto } from './dto/register-seller.dto';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -12,7 +14,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async create(dto: RegisterUserDto) {
+  async createBuyer(dto: RegisterUserDto) {
     await this.ensureEmailUnique(dto.email);
     const hashed = await bcrypt.hash(dto.password, 10);
 
@@ -20,6 +22,18 @@ export class AuthService {
       name: dto.name,
       email: dto.email,
       password: hashed,
+    });
+  }
+
+  async createSeller(dto: RegisterSellerDto) {
+    await this.ensureEmailUnique(dto.email);
+    const hashed = await bcrypt.hash(dto.password, 10);
+
+    return this.repo.create({
+      name: dto.name,
+      email: dto.email,
+      password: hashed,
+      role: Role.SELLER,
     });
   }
 

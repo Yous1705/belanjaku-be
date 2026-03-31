@@ -26,16 +26,38 @@ export class ProductRepository {
   findBySlug(slug: string) {
     return this.prisma.product.findUnique({
       where: { slug },
+      include: {
+        category: {
+          select: {
+            name: true,
+          },
+        },
+      },
     });
   }
 
   findAllProducts() {
-    return this.prisma.product.findMany();
+    return this.prisma.product.findMany({
+      include: {
+        category: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
   }
 
-  findAllProductsByStoreId(storeId: number) {
+  findAllProductsByStoreId(slug: string) {
     return this.prisma.product.findMany({
-      where: { storeId },
+      where: { store: { slug } },
+      include: {
+        category: {
+          select: {
+            name: true,
+          },
+        },
+      },
     });
   }
 
@@ -45,7 +67,15 @@ export class ProductRepository {
       select: {
         store: {
           select: {
-            products: true,
+            products: {
+              include: {
+                category: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
           },
         },
       },

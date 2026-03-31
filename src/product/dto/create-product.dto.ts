@@ -12,4 +12,7 @@ export class CreateProductDto {
 
   @IsInt()
   stock: number;
+
+  @IsInt()
+  category: number;
 }

@@ -40,6 +40,12 @@ export class ProductController {
   }
 
   @Roles(Role.ADMIN, Role.SELLER, Role.BUYER)
+  @Get('all-products-by-store/:slug')
+  getAllProductsByStoreId(@Param('slug') slug: string) {
+    return this.productService.getAllProductsByStoreId(slug);
+  }
+
+  @Roles(Role.ADMIN, Role.SELLER, Role.BUYER)
   @Get('all-products')
   getAllProducts() {
     return this.productService.getAllProducts();

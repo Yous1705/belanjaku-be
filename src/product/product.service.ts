@@ -40,6 +40,9 @@ export class ProductService {
       store: {
         connect: { id: store.id },
       },
+      category: {
+        connect: { id: data.category },
+      },
     });
   }
 
@@ -69,6 +72,7 @@ export class ProductService {
       price: dto.price,
       description: dto.description,
       stock: dto.stock,
+      category: dto.category ? { connect: { id: dto.category } } : undefined,
     };
 
     if (dto.name) {
@@ -105,5 +109,9 @@ export class ProductService {
 
   getAllProducts() {
     return this.repo.findAllProducts();
+  }
+
+  getAllProductsByStoreId(slug: string) {
+    return this.repo.findAllProductsByStoreId(slug);
   }
 }

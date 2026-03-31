@@ -33,6 +33,12 @@ export class ProductRepository {
     return this.prisma.product.findMany();
   }
 
+  findAllProductsByStoreId(storeId: number) {
+    return this.prisma.product.findMany({
+      where: { storeId },
+    });
+  }
+
   getAllMyProduct(userId: number) {
     return this.prisma.user.findMany({
       where: { id: userId },

@@ -5,6 +5,10 @@ export class CreateStoreDto {
   name: string;
 
   @IsString()
+  @IsOptional()
+  slug: string;
+
+  @IsString()
   description: string;
 
   @IsString()

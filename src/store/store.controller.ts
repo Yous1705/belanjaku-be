@@ -19,7 +19,7 @@ import { RolesGuard } from 'src/auth/guard/roles.guard';
 import { profile } from 'console';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN, Role.SELLER, Role.BUYER)
+@Roles(Role.ADMIN, Role.SELLER)
 @Controller('store')
 export class StoreController {
   constructor(private readonly storeService: StoreService) {}
@@ -32,5 +32,16 @@ export class StoreController {
   @Get('store-profile')
   getStore(@Req() req) {
     return this.storeService.getStore(req.user.sub);
+  }
+
+  @Roles(Role.ADMIN, Role.SELLER)
+  @Get('store-profile/:slug')
+  findStoreProfileAsUser(@Param('slug') slug: string) {
+    return this.storeService.findStoreProfileAsUser(slug);
+  }
+
+  @Delete('delete-store')
+  deleteMyStore(@Req() req) {
+    return this.storeService.deleteMyStore(req.user.sub);
   }
 }

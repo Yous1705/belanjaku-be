@@ -33,11 +33,13 @@ export class ProductController {
     return this.productService.getAllMyProducts(req.user.sub);
   }
 
+  @Roles(Role.ADMIN, Role.SELLER, Role.BUYER)
   @Get('product-detail/:slug')
   getProductDetail(@Req() req, @Param('slug') slug: string) {
     return this.productService.getProductDetail(req.user.sub, slug);
   }
 
+  @Roles(Role.ADMIN, Role.SELLER, Role.BUYER)
   @Get('all-products')
   getAllProducts() {
     return this.productService.getAllProducts();

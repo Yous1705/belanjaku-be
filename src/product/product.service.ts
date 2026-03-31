@@ -54,12 +54,6 @@ export class ProductService {
   }
 
   async getProductDetail(userId: number, slug: string) {
-    const store = await this.repo.findStoreByUserId(userId);
-
-    if (!store) {
-      throw new NotFoundException('Anda belum memiliki toko');
-    }
-
     return this.repo.findBySlug(slug);
   }
 

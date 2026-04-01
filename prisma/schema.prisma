@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  moduleFormat ="cjs"
 }
 
 datasource db {
@@ -10,14 +9,12 @@ datasource db {
 
 enum Role {
   ADMIN
-  SELLER
   BUYER
 }
 
 enum OrderStatus {
   PENDING
   PAID
-  FAILED
   CANCELLED
   PROCESSING
   SHIPPED
@@ -31,42 +28,25 @@ enum PaymentStatus {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
-  name        String
-  email       String   @unique
-  password    String
-  role        Role     @default(BUYER)
-  avatar      String?  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(BUYER)
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt // Menggunakan @updatedAt otomatis
 
-  store Store?
-  addresses   Address[]
-  carts       Cart[]
-  orders      Order[]
-  wishlist    Wishlist[]
-  messages    Message[]
-}
-
-model Store {
-  id          Int      @id @default(autoincrement())
-  name        String
-  slug        String   @unique
-  description String?
-  logo        String?   // 🔥 store image
-  userId      Int       @unique
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  products    Product[]
+  addresses Address[]
+  cart      Cart?      // Satu user satu cart
+  orders    Order[]
+  wishlists Wishlist[]
+  messages  Message[]
 }
 
 model Category {
-  id        Int      @id @default(autoincrement())
-  name      String 
-  createdAt DateTime @default(now())
-
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
   products  Product[]
 }
 
@@ -74,130 +54,110 @@ model Product {
   id          Int      @id @default(autoincrement())
   name        String
   slug        String   @unique
-  description String
+  description String   @db.Text // Menggunakan tipe Text untuk deskripsi panjang
   price       Float
   stock       Int
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  storeId     Int
   categoryId  Int?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  category    Category? @relation(fields: [categoryId], references: [id])
-
-  images      ProductImage[] // 🔥 multi image
-
+  images      ProductImage[]
   cartItems   CartItem[]
   orderItems  OrderItem[]
   wishlists   Wishlist[]
 
-  @@index([storeId])
+  @@index([slug])
 }
 
 model ProductImage {
-  id        Int      @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   url       String
   productId Int
-  createdAt DateTime @default(now())
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model Address {
-  id        Int      @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   userId    Int
+  isMain    Boolean @default(false) // Tambahan: untuk menandai alamat utama
   address   String?
   city      String?
   postal    String?
-
-  user      User     @relation(fields: [userId], references: [id])
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Cart {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique 
-
-  user      User     @relation(fields: [userId], references: [id])
-  items     CartItem[]
+  id     Int        @id @default(autoincrement())
+  userId Int        @unique
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items  CartItem[]
 }
 
 model CartItem {
-  id        Int   @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   cartId    Int
   productId Int
   quantity  Int
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
-
-  @@unique([cartId, productId]) 
+  @@unique([cartId, productId])
 }
 
 model Wishlist {
-  id        Int   @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   userId    Int
   productId Int
-
-  user      User    @relation(fields: [userId], references: [id])
-  product   Product @relation(fields: [productId], references: [id])
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
 }
 
 model Order {
-  id            Int          @id @default(autoincrement())
-  userId        Int
-  totalPrice    Float
-  status        OrderStatus  @default(PENDING)
-  createdAt     DateTime     @default(now())
+  id         Int         @id @default(autoincrement())
+  orderId    String      @unique @default(cuid()) // ID unik untuk invoice (mis: "cl-12345")
+  userId     Int
+  totalPrice Float
+  status     OrderStatus @default(PENDING)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 
-  user          User         @relation(fields: [userId], references: [id])
-  items         OrderItem[]
-  payment       Payment?
+  user       User        @relation(fields: [userId], references: [id])
+  items      OrderItem[]
+  payment    Payment?
 }
 
 model OrderItem {
-  id        Int   @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   orderId   Int
   productId Int
   quantity  Int
-  price     Float
+  price     Float   // Harga saat barang dibeli (Snapshot price)
 
-  order     Order    @relation(fields: [orderId], references: [id])
-  product Product @relation(fields: [productId], references: [id], onDelete: SetNull)
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict) 
 }
 
 model Payment {
-  id         Int           @id @default(autoincrement())
-  orderId    Int           @unique
-  amount     Float
-  status     PaymentStatus @default(PENDING)
-  provider   String
-  createdAt  DateTime      @default(now())
+  id        Int           @id @default(autoincrement())
+  orderId   Int           @unique
+  amount    Float
+  status    PaymentStatus @default(PENDING)
+  method    String        // Misal: "Midtrans", "Stripe", "Manual Transfer"
+  createdAt DateTime      @default(now())
 
-  order      Order         @relation(fields: [orderId], references: [id])
-}
-
-model ChatRoom {
-  id        Int      @id @default(autoincrement())
-  buyerId   Int
-  sellerId  Int
-  productId Int?    
-  createdAt DateTime @default(now())
-
-  messages  Message[]
-
-  @@index([buyerId, sellerId])
+  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model Message {
-  id         Int      @id @default(autoincrement())
-  chatRoomId Int
-  senderId   Int
-  content    String
-  createdAt  DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  userId    Int      // User yang terlibat (Pembeli)
+  senderId  Int      // ID User yang mengirim (bisa Admin atau Pembeli)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
 
-  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id])
-  sender     User     @relation(fields: [senderId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

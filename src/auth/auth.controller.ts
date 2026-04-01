@@ -21,9 +21,9 @@ export class AuthController {
     return this.authService.createBuyer(registerUserDto);
   }
 
-  @Post('register/seller')
-  createSeller(@Body() registerSellerDto: RegisterSellerDto) {
-    return this.authService.createSeller(registerSellerDto);
+  @Post('register/admin')
+  createAdmin(@Body() registerSellerDto: RegisterSellerDto) {
+    return this.authService.createAdmin(registerSellerDto);
   }
 
   @Post('login')

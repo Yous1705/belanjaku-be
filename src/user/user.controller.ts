@@ -18,11 +18,12 @@ import { UpdateAdressesDto } from './dto/update-addresses.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN, Role.SELLER, Role.BUYER)
+@Roles(Role.ADMIN, Role.BUYER)
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Get('profile')
   getProfile(@Req() req) {
     return this.userService.getProfile(req.user.sub);
   }

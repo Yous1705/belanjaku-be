@@ -10,16 +10,38 @@ export class ProductRepository {
     return this.prisma.product.create({ data });
   }
 
-  updateBySlug(slug: string, storeId: number, data: Prisma.ProductUpdateInput) {
+  updateBySlug(slug: string, data: Prisma.ProductUpdateInput) {
     return this.prisma.product.update({
-      where: { slug: slug, storeId: storeId },
+      where: { slug: slug },
       data,
+      include: {
+        category: {
+          select: {
+            name: true,
+          },
+        },
+        images: {
+          select: {
+            url: true,
+          },
+        },
+      },
     });
   }
 
-  findStoreByUserId(userId: number) {
-    return this.prisma.store.findUnique({
-      where: { userId: userId },
+  addMoreImages(slug: string, newUrls: string[]) {
+    return this.prisma.product.update({
+      where: { slug: slug },
+      data: {
+        images: {
+          create: newUrls.map((url) => ({
+            url,
+          })),
+        },
+      },
+      include: {
+        images: true,
+      },
     });
   }
 
@@ -30,6 +52,11 @@ export class ProductRepository {
         category: {
           select: {
             name: true,
+          },
+        },
+        images: {
+          select: {
+            url: true,
           },
         },
       },
@@ -44,47 +71,35 @@ export class ProductRepository {
             name: true,
           },
         },
+        images: {
+          select: {
+            url: true,
+          },
+        },
       },
     });
   }
 
-  findAllProductsByStoreId(slug: string) {
+  getAllMyProduct() {
     return this.prisma.product.findMany({
-      where: { store: { slug } },
       include: {
         category: {
           select: {
             name: true,
           },
         },
-      },
-    });
-  }
-
-  getAllMyProduct(userId: number) {
-    return this.prisma.user.findMany({
-      where: { id: userId },
-      select: {
-        store: {
+        images: {
           select: {
-            products: {
-              include: {
-                category: {
-                  select: {
-                    name: true,
-                  },
-                },
-              },
-            },
+            url: true,
           },
         },
       },
     });
   }
 
-  delete(slug: string, storeId: number) {
+  delete(slug: string) {
     return this.prisma.product.delete({
-      where: { slug: slug, storeId: storeId },
+      where: { slug: slug },
     });
   }
 }

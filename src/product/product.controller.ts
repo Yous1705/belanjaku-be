@@ -16,9 +16,10 @@ import { Roles } from 'src/auth/guard/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guard/roles.guard';
 import { Role } from '@prisma/client';
+import { addMoreImagesDto } from './dto/add-more-images.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.SELLER)
+@Roles(Role.ADMIN)
 @Controller('product')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
@@ -28,24 +29,13 @@ export class ProductController {
     return this.productService.createProduct(req.user.sub, data);
   }
 
-  @Get('my-products')
-  getAllMyProducts(@Req() req) {
-    return this.productService.getAllMyProducts(req.user.sub);
-  }
-
-  @Roles(Role.ADMIN, Role.SELLER, Role.BUYER)
+  @Roles(Role.ADMIN, Role.BUYER)
   @Get('product-detail/:slug')
   getProductDetail(@Req() req, @Param('slug') slug: string) {
     return this.productService.getProductDetail(req.user.sub, slug);
   }
 
-  @Roles(Role.ADMIN, Role.SELLER, Role.BUYER)
-  @Get('all-products-by-store/:slug')
-  getAllProductsByStoreId(@Param('slug') slug: string) {
-    return this.productService.getAllProductsByStoreId(slug);
-  }
-
-  @Roles(Role.ADMIN, Role.SELLER, Role.BUYER)
+  @Roles(Role.ADMIN, Role.BUYER)
   @Get('all-products')
   getAllProducts() {
     return this.productService.getAllProducts();
@@ -58,6 +48,15 @@ export class ProductController {
     @Body() dto: UpdateProductDto,
   ) {
     return this.productService.updateProduct(req.user.sub, slug, dto);
+  }
+
+  @Patch('add-images/:slug')
+  addMoreImages(
+    @Req() req,
+    @Param('slug') slug: string,
+    @Body() dto: addMoreImagesDto,
+  ) {
+    return this.productService.addMoreImages(req.user.sub, slug, dto);
   }
 
   @Delete('delete-product/:slug')

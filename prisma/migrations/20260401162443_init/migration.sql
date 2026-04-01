@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Address" ALTER COLUMN "address" DROP NOT NULL,
+ALTER COLUMN "city" DROP NOT NULL,
+ALTER COLUMN "postal" DROP NOT NULL;

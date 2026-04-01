@@ -25,7 +25,7 @@ export class AuthService {
     });
   }
 
-  async createSeller(dto: RegisterSellerDto) {
+  async createAdmin(dto: RegisterSellerDto) {
     await this.ensureEmailUnique(dto.email);
     const hashed = await bcrypt.hash(dto.password, 10);
 
@@ -33,7 +33,7 @@ export class AuthService {
       name: dto.name,
       email: dto.email,
       password: hashed,
-      role: Role.SELLER,
+      role: Role.ADMIN,
     });
   }
 

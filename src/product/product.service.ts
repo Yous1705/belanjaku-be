@@ -9,19 +9,13 @@ import { ProductRepository } from './product.repository';
 import { connect } from 'http2';
 import { Prisma } from '@prisma/client';
 import slugify from 'slugify';
+import { addMoreImagesDto } from './dto/add-more-images.dto';
 
 @Injectable()
 export class ProductService {
   constructor(private readonly repo: ProductRepository) {}
 
   async createProduct(userId: number, data: CreateProductDto) {
-    const store = await this.repo.findStoreByUserId(userId);
-
-    if (!store) {
-      console.log(store);
-      throw new NotFoundException('Anda belum memiliki toko');
-    }
-
     const generatedSlug = slugify(data.name, { lower: true, strict: true });
 
     const isSlugTaken = await this.repo.findBySlug(generatedSlug);
@@ -37,23 +31,20 @@ export class ProductService {
       price: data.price,
       description: data.description,
       stock: data.stock,
-      store: {
-        connect: { id: store.id },
-      },
       category: {
         connect: { id: data.category },
+      },
+
+      images: {
+        create: data.images?.map((url) => ({
+          url,
+        })),
       },
     });
   }
 
-  async getAllMyProducts(userId: number) {
-    const store = await this.repo.findStoreByUserId(userId);
-
-    if (!store) {
-      throw new NotFoundException('Anda belum memiliki toko');
-    }
-
-    return this.repo.getAllMyProduct(userId);
+  addMoreImages(userId: number, slug: string, dto: addMoreImagesDto) {
+    return this.repo.addMoreImages(slug, dto.images);
   }
 
   async getProductDetail(userId: number, slug: string) {
@@ -61,12 +52,6 @@ export class ProductService {
   }
 
   async updateProduct(userId: number, slug: string, dto: UpdateProductDto) {
-    const store = await this.repo.findStoreByUserId(userId);
-
-    if (!store) {
-      throw new NotFoundException('Anda belum memiliki toko');
-    }
-
     const updateData: Prisma.ProductUpdateInput = {
       name: dto.name,
       price: dto.price,
@@ -89,29 +74,19 @@ export class ProductService {
       }
     }
 
-    return await this.repo.updateBySlug(slug, store.id, updateData);
+    return await this.repo.updateBySlug(slug, updateData);
   }
 
   async deleteProduct(userId: number, slug: string) {
-    const store = await this.repo.findStoreByUserId(userId);
-
-    if (!store) {
-      throw new NotFoundException('Anda belum memiliki toko');
-    }
-
     const product = await this.repo.findBySlug(slug);
     if (!product) {
       throw new NotFoundException('Produk tidak ditemukan');
     }
 
-    return this.repo.delete(product.slug, store.id);
+    return this.repo.delete(product.slug);
   }
 
   getAllProducts() {
     return this.repo.findAllProducts();
-  }
-
-  getAllProductsByStoreId(slug: string) {
-    return this.repo.findAllProductsByStoreId(slug);
   }
 }

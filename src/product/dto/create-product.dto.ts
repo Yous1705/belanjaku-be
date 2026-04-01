@@ -1,4 +1,4 @@
-import { IsInt, IsNumber, IsString } from 'class-validator';
+import { IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateProductDto {
   @IsString()
@@ -15,4 +15,8 @@ export class CreateProductDto {
 
   @IsInt()
   category: number;
+
+  @IsString({ each: true })
+  @IsOptional()
+  images: string[];
 }

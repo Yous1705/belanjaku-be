@@ -86,7 +86,7 @@ export class ProductService {
     return this.repo.delete(product.slug);
   }
 
-  getAllProducts() {
-    return this.repo.findAllProducts();
+  getAllProducts(query: { slug?: string; category?: string }) {
+    return this.repo.findAllProducts(query);
   }
 }

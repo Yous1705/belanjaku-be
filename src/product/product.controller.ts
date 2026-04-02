@@ -8,6 +8,7 @@ import {
   Delete,
   Req,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -37,8 +38,11 @@ export class ProductController {
 
   @Roles(Role.ADMIN, Role.BUYER)
   @Get('all-products')
-  getAllProducts() {
-    return this.productService.getAllProducts();
+  getAllProducts(
+    @Query('slug') slug?: string,
+    @Query('category') category?: string,
+  ) {
+    return this.productService.getAllProducts({ slug, category });
   }
 
   @Patch('update-product/:slug')

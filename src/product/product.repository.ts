@@ -63,8 +63,14 @@ export class ProductRepository {
     });
   }
 
-  findAllProducts() {
+  findAllProducts(filter?: { slug?: string; category?: string }) {
     return this.prisma.product.findMany({
+      where: {
+        ...(filter?.slug && {
+          slug: { contains: filter.slug, mode: 'insensitive' },
+        }),
+        ...(filter?.category && { category: { name: filter.category } }),
+      },
       include: {
         category: {
           select: {

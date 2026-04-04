@@ -35,10 +35,10 @@ model User {
   role      Role     @default(BUYER)
   avatar    String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt // Menggunakan @updatedAt otomatis
+  updatedAt DateTime @updatedAt 
 
   addresses Address[]
-  cart      Cart?      // Satu user satu cart
+  cart      Cart?      
   orders    Order[]
   wishlists Wishlist[]
   messages  Message[]
@@ -54,7 +54,7 @@ model Product {
   id          Int      @id @default(autoincrement())
   name        String
   slug        String   @unique
-  description String   @db.Text // Menggunakan tipe Text untuk deskripsi panjang
+  description String   @db.Text 
   price       Float
   stock       Int
   createdAt   DateTime @default(now())
@@ -81,7 +81,7 @@ model ProductImage {
 model Address {
   id        Int     @id @default(autoincrement())
   userId    Int
-  isMain    Boolean @default(false) // Tambahan: untuk menandai alamat utama
+  isMain    Boolean @default(false) 
   address   String?
   city      String?
   postal    String?
@@ -118,7 +118,7 @@ model Wishlist {
 
 model Order {
   id         Int         @id @default(autoincrement())
-  orderId    String      @unique @default(cuid()) // ID unik untuk invoice (mis: "cl-12345")
+  orderId    String      @unique @default(cuid()) 
   userId     Int
   totalPrice Float
   status     OrderStatus @default(PENDING)
@@ -135,7 +135,7 @@ model OrderItem {
   orderId   Int
   productId Int
   quantity  Int
-  price     Float   // Harga saat barang dibeli (Snapshot price)
+  price     Float   
 
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id], onDelete: Restrict) 
@@ -146,7 +146,7 @@ model Payment {
   orderId   Int           @unique
   amount    Float
   status    PaymentStatus @default(PENDING)
-  method    String        // Misal: "Midtrans", "Stripe", "Manual Transfer"
+  method    String       
   createdAt DateTime      @default(now())
 
   order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -154,8 +154,8 @@ model Payment {
 
 model Message {
   id        Int      @id @default(autoincrement())
-  userId    Int      // User yang terlibat (Pembeli)
-  senderId  Int      // ID User yang mengirim (bisa Admin atau Pembeli)
+  userId    Int      
+  senderId  Int      
   content   String   @db.Text
   createdAt DateTime @default(now())
 

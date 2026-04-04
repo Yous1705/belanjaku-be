@@ -4,7 +4,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrderRepository } from './order.repository';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, PaymentStatus } from '@prisma/client';
 
 @Injectable()
 export class OrderService {
@@ -61,7 +61,7 @@ export class OrderService {
           },
         },
         amount: totalPrice,
-        status: OrderStatus.PENDING,
+        status: PaymentStatus.PENDING,
         method: 'Midtrans',
       });
 

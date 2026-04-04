@@ -12,6 +12,9 @@ import { CartModule } from './cart/cart.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { OrderModule } from './order/order.module';
 import { PaymentModule } from './payment/payment.module';
+import { MessageModule } from './message/message.module';
+import { ChatGateway } from './chat/chat.gateway';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -24,6 +27,8 @@ import { PaymentModule } from './payment/payment.module';
     WishlistModule,
     OrderModule,
     PaymentModule,
+    MessageModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

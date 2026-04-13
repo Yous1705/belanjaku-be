@@ -34,22 +34,13 @@ export class WishlistRepository {
             productId: product.id,
           },
         },
-        select: {
-          product: {
-            select: {
-              name: true,
-              price: true,
-              category: {
-                select: {
-                  name: true,
-                },
-              },
-            },
-          },
-        },
       });
 
-      return { message: 'Product removed from wishlist' };
+      return {
+        message: 'Product removed from wishlist',
+        isWishlisted: false,
+        productId: product.id,
+      };
     }
 
     await this.prisma.wishlist.create({
@@ -62,6 +53,12 @@ export class WishlistRepository {
           select: {
             name: true,
             price: true,
+            images: {
+              take: 1,
+              select: {
+                url: true,
+              },
+            },
             category: {
               select: {
                 name: true,
@@ -72,15 +69,20 @@ export class WishlistRepository {
       },
     });
 
-    return { message: 'Product added to wishlist' };
+    return {
+      message: 'Product added to wishlist',
+      isWishlisted: true,
+      productId: product.id,
+    };
   }
 
-  getMyWishlist(userId: number) {
-    return this.prisma.wishlist.findMany({
+  async getMyWishlist(userId: number) {
+    const data = await this.prisma.wishlist.findMany({
       where: { userId },
-      include: {
+      select: {
         product: {
           select: {
+            id: true,
             name: true,
             slug: true,
             price: true,
@@ -90,6 +92,7 @@ export class WishlistRepository {
               },
             },
             images: {
+              take: 1,
               select: {
                 url: true,
               },
@@ -98,5 +101,14 @@ export class WishlistRepository {
         },
       },
     });
+
+    return data.map((w) => ({
+      id: w.product.id,
+      name: w.product.name,
+      slug: w.product.slug,
+      price: w.product.price,
+      category: w.product.category?.name,
+      image: w.product.images?.[0]?.url || null,
+    }));
   }
 }

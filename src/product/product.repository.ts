@@ -7,7 +7,13 @@ export class ProductRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   create(data: Prisma.ProductCreateInput) {
-    return this.prisma.product.create({ data });
+    return this.prisma.product.create({
+      data,
+      include: {
+        images: true,
+        specifications: true,
+      },
+    });
   }
 
   updateBySlug(slug: string, data: Prisma.ProductUpdateInput) {
@@ -59,15 +65,20 @@ export class ProductRepository {
             url: true,
           },
         },
+        specifications: true,
+        reviews: true,
       },
     });
   }
 
-  findAllProducts(filter?: { slug?: string; category?: string }) {
+  findAllProducts(
+    userId: number,
+    filter?: { name?: string; category?: string },
+  ) {
     return this.prisma.product.findMany({
       where: {
-        ...(filter?.slug && {
-          slug: { contains: filter.slug, mode: 'insensitive' },
+        ...(filter?.name && {
+          name: { contains: filter.name, mode: 'insensitive' },
         }),
         ...(filter?.category && { category: { name: filter.category } }),
       },
@@ -80,6 +91,14 @@ export class ProductRepository {
         images: {
           select: {
             url: true,
+          },
+        },
+        wishlists: {
+          where: {
+            userId: userId,
+          },
+          select: {
+            id: true,
           },
         },
       },

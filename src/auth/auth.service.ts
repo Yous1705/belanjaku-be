@@ -37,7 +37,7 @@ export class AuthService {
     });
   }
 
-  async login(data: { email; password }) {
+  async login(data: { email: string; password: string }) {
     const user = await this.repo.findByEmail(data.email);
 
     if (!user) {

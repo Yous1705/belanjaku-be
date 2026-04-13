@@ -23,7 +23,7 @@ import { Role } from '@prisma/client';
 export class WishlistController {
   constructor(private readonly wishlistService: WishlistService) {}
 
-  @Get('my-wishlist')
+  @Get('my-wishlists')
   getMyWishlist(@Req() req) {
     return this.wishlistService.getMyWishlist(req.user.sub);
   }

@@ -39,10 +39,11 @@ export class ProductController {
   @Roles(Role.ADMIN, Role.BUYER)
   @Get('all-products')
   getAllProducts(
-    @Query('slug') slug?: string,
+    @Req() req,
+    @Query('slug') name?: string,
     @Query('category') category?: string,
   ) {
-    return this.productService.getAllProducts({ slug, category });
+    return this.productService.getAllProducts(req.user.sub, { name, category });
   }
 
   @Patch('update-product/:slug')

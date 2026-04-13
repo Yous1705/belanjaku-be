@@ -43,6 +43,8 @@ model User {
   wishlists Wishlist[]
   messages  Message[]
   conversations Conversation[]
+
+  reviews   Review[]
 }
 
 model Category {
@@ -69,7 +71,34 @@ model Product {
   orderItems  OrderItem[]
   wishlists   Wishlist[]
 
+  specifications ProductSpecification[]
+  reviews        Review[]
+
   @@index([slug])
+}
+
+model ProductSpecification {
+  id        Int     @id @default(autoincrement())
+  key       String  // Contoh: "Warna", "Material", "Dimensi"
+  value     String  // Contoh: "Hitam Doff", "Aluminium", "20x10cm"
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  rating    Int      @default(5) // Skala 1-5
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  userId    Int
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
 }
 
 model ProductImage {

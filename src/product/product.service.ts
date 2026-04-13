@@ -34,10 +34,15 @@ export class ProductService {
       category: {
         connect: { id: data.category },
       },
-
       images: {
         create: data.images?.map((url) => ({
           url,
+        })),
+      },
+      specifications: {
+        create: data.specifications?.map((spec) => ({
+          key: spec.key,
+          value: spec.value,
         })),
       },
     });
@@ -86,7 +91,21 @@ export class ProductService {
     return this.repo.delete(product.slug);
   }
 
-  getAllProducts(query: { slug?: string; category?: string }) {
-    return this.repo.findAllProducts(query);
+  async getAllProducts(
+    userId: number,
+    query: { name?: string; category?: string },
+  ) {
+    const products = await this.repo.findAllProducts(userId, query);
+
+    return products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      description: p.description,
+      price: p.price,
+      category: p.category?.name ?? 'Uncategorized',
+      image: p.images?.[0]?.url || '/images/image.jpg',
+      isWishlisted: p.wishlists.length > 0,
+    }));
   }
 }

@@ -94,4 +94,25 @@ export class OrderService {
   findAllMyOrders(userId: number) {
     return this.repo.findAllMyOrders(userId);
   }
+
+  async findMyOrderByPendingStatus(userId: number) {
+    const orders = await this.repo.findMyOrderByPendingStatus(userId);
+
+    if (!orders || orders.length === 0) {
+      throw new BadRequestException('Order not found');
+    }
+
+    const formattedOrder = orders.map((order) => {
+      const itemsWithTotal = order.items.map((item) => ({
+        ...item,
+        total: item.price * item.quantity,
+      }));
+      return {
+        ...order,
+        items: itemsWithTotal,
+      };
+    });
+
+    return formattedOrder;
+  }
 }

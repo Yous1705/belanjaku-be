@@ -5,6 +5,26 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class CartRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  findBySlug(slug: string) {
+    return this.prisma.product.findUnique({
+      where: { slug },
+      include: {
+        category: {
+          select: {
+            name: true,
+          },
+        },
+        images: {
+          select: {
+            url: true,
+          },
+        },
+        specifications: true,
+        reviews: true,
+      },
+    });
+  }
+
   getMycart(userId: number) {
     return this.prisma.cart.findUnique({
       where: { userId },
@@ -16,6 +36,9 @@ export class CartRepository {
                 name: true,
                 slug: true,
                 price: true,
+                discountExpiry: true,
+                discountPrice: true,
+                isDiscount: true,
                 category: {
                   select: {
                     name: true,

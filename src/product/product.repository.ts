@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { OrderStatus, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -22,15 +22,12 @@ export class ProductRepository {
       data,
       include: {
         category: {
-          select: {
-            name: true,
-          },
+          select: { name: true },
         },
         images: {
-          select: {
-            url: true,
-          },
+          select: { url: true },
         },
+        specifications: true,
       },
     });
   }
@@ -125,6 +122,45 @@ export class ProductRepository {
   delete(slug: string) {
     return this.prisma.product.delete({
       where: { slug: slug },
+    });
+  }
+
+  getHitsProduct() {
+    return this.prisma.product.findMany({
+      where: {
+        orderItems: {
+          some: {
+            order: {
+              createdAt: {
+                gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+              },
+              status: OrderStatus.PAID,
+            },
+          },
+        },
+      },
+      orderBy: {
+        orderItems: {
+          _count: 'desc',
+        },
+      },
+      include: {
+        category: {
+          select: {
+            name: true,
+          },
+        },
+        images: {
+          select: {
+            url: true,
+          },
+        },
+        wishlists: {
+          select: {
+            id: true,
+          },
+        },
+      },
     });
   }
 }

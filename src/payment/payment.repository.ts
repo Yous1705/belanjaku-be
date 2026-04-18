@@ -77,33 +77,29 @@ export class PaymentRepository {
     });
   }
 
-  async handlesSuccess(orderId: number) {
-    console.log('✅ MASUK SUCCESS:', orderId);
+  async handlesSuccess(pkId: number) {
     return this.prisma.$transaction(async (tx) => {
-      const items = await tx.orderItem.findMany({
-        where: { orderId },
-      });
-
+      // Update Payment: kolom orderId di model Payment kamu adalah Int
       await tx.payment.update({
-        where: { orderId },
+        where: { orderId: pkId },
         data: { status: PaymentStatus.SUCCESS },
       });
 
+      // Update Order: kolom id adalah Primary Key
       await tx.order.update({
-        where: { id: orderId },
+        where: { id: pkId },
         data: { status: OrderStatus.PAID },
+      });
+
+      // Ambil items: kolom orderId di OrderItem adalah Int
+      const items = await tx.orderItem.findMany({
+        where: { orderId: pkId },
       });
 
       for (const item of items) {
         await tx.product.update({
-          where: {
-            id: item.productId,
-          },
-          data: {
-            stock: {
-              decrement: item.quantity,
-            },
-          },
+          where: { id: item.productId },
+          data: { stock: { decrement: item.quantity } },
         });
       }
     });

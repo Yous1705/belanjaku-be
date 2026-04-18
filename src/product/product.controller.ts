@@ -46,6 +46,12 @@ export class ProductController {
     return this.productService.getAllProducts(req.user.sub, { name, category });
   }
 
+  @Roles(Role.ADMIN, Role.BUYER)
+  @Get('hits-product')
+  getHitsProduct() {
+    return this.productService.getHitsProduct();
+  }
+
   @Patch('update-product/:slug')
   updateProduct(
     @Req() req,

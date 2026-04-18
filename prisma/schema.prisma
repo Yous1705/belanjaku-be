@@ -71,8 +71,14 @@ model Product {
   orderItems  OrderItem[]
   wishlists   Wishlist[]
 
+  discountPrice  Decimal? 
+  isDiscount     Boolean  @default(false)
+  discountExpiry DateTime? 
+
   specifications ProductSpecification[]
   reviews        Review[]
+
+  weeklyStats     ProductWeeklyStats?
 
   @@index([slug])
 }
@@ -83,6 +89,14 @@ model ProductSpecification {
   value     String  // Contoh: "Hitam Doff", "Aluminium", "20x10cm"
   productId Int
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductWeeklyStats {
+  id          String   @id @default(cuid())
+  productId   Int   @unique
+  product     Product  @relation(fields: [productId], references: [id])
+  salesCount  Int      @default(0)
+  updatedAt   DateTime @updatedAt
 }
 
 model Review {

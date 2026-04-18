@@ -26,6 +26,33 @@ export class OrderRepository {
     });
   }
 
+  findMyOrderByPendingStatus(userId: number) {
+    return this.prisma.order.findMany({
+      where: {
+        user: {
+          id: userId,
+        },
+        status: OrderStatus.PENDING,
+      },
+
+      select: {
+        totalPrice: true,
+        id: true,
+        items: {
+          select: {
+            quantity: true,
+            price: true,
+            product: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
   createOrderItem(
     tx: Prisma.TransactionClient,
     data: Prisma.OrderItemCreateManyInput[],

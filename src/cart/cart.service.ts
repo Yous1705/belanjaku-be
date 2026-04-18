@@ -14,12 +14,19 @@ export class CartService {
     }
 
     const items = cart.items.map((item) => {
-      const totalPrice = item.quantity * item.product.price;
+      const now = new Date();
+      const isExpired =
+        item.product.discountExpiry && item.product.discountExpiry < now;
+      const currentPrice = isExpired
+        ? item.product.price
+        : (item.product.discountPrice?.toNumber() ?? item.product.price);
+      const totalPrice = item.quantity * currentPrice;
       return {
+        id: item.productId,
         product: item.product,
         slug: item.product.slug,
         quantity: item.quantity,
-        price: item.product.price,
+        currentPrice,
         totalPrice,
       };
     });

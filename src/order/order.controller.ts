@@ -40,19 +40,8 @@ export class OrderController {
     return this.orderService.findAllMyOrders(req.user.sub);
   }
 
-  // async checkout(@Req() req) {
-  //   try {
-  //     const order = await this.orderService.checkout(req.user.sub);
-  //     return {
-  //       success: true,
-  //       message: 'Checkout successful',
-  //       data: order,
-  //     };
-  //   } catch (e) {
-  //     return {
-  //       success: false,
-  //       message: 'Checkout failed: ',
-  //     };
-  //   }
-  // }
+  @Get('pending')
+  getPendingOrders(@Req() req) {
+    return this.orderService.findMyOrderByPendingStatus(req.user.sub);
+  }
 }

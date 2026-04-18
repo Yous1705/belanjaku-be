@@ -3,11 +3,15 @@ import { PaymentRepository } from './payment.repository';
 import midtransClient from 'midtrans-client';
 import { MidtransWebhookDto } from './dto/midtrans.dto';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class PaymentService {
   private snap;
-  constructor(private readonly repo: PaymentRepository) {
+  constructor(
+    private readonly repo: PaymentRepository,
+    private readonly prisma: PrismaService,
+  ) {
     this.snap = new midtransClient.Snap({
       isProduction: false,
       serverKey: process.env.MIDTRANS_SERVER_KEY,
@@ -17,32 +21,17 @@ export class PaymentService {
   async createPayment(id: number, userId: number) {
     const order = await this.repo.findOrderById(id);
 
-    if (!order) {
-      throw new BadRequestException('Order not found');
-    }
-
-    if (order.userId !== userId) {
+    if (!order) throw new BadRequestException('Order not found');
+    if (order.userId !== userId)
       throw new BadRequestException('Not Your Order');
-    }
+    if (order.status !== 'PENDING')
+      throw new BadRequestException('Order is already processed');
 
-    if (order.status !== 'PENDING') {
-      throw new BadRequestException('Order is not pending');
-    }
-
-    if (!order.payment) {
-      throw new BadRequestException('Payment not initialized');
-    }
-
-    // await this.repo.createPayment({
-    //   orderId: order.id,
-    //   amount: order.totalPrice,
-    //   status: 'PENDING',
-    //   method: 'MIDTRANS',
-    // });
+    const midtransOrderId = `${order.orderId}-${Date.now()}`;
 
     const transaction = await this.snap.createTransaction({
       transaction_details: {
-        order_id: order.orderId,
+        order_id: midtransOrderId,
         gross_amount: order.totalPrice,
       },
       customer_details: {
@@ -60,26 +49,27 @@ export class PaymentService {
   async handleWebhook(payload: MidtransWebhookDto) {
     const { order_id, transaction_status } = payload;
 
-    const order = await this.repo.findOrderByOrderId(order_id);
+    const originalOrderId = order_id.split('-')[0];
 
-    if (!order) {
-      throw new BadRequestException('Order not found');
-    }
+    const order = await this.prisma.order.findUnique({
+      where: { orderId: originalOrderId },
+    });
 
-    if (order.payment?.status === 'SUCCESS') return;
+    if (!order) throw new BadRequestException('Order not found');
+
+    if (order.status === OrderStatus.PAID) return { message: 'Already paid' };
 
     if (
       transaction_status === 'settlement' ||
       transaction_status === 'capture'
     ) {
-      console.log('STATUS:', transaction_status);
       await this.repo.handlesSuccess(order.id);
-    }
-
-    if (transaction_status === 'expire' || transaction_status === 'cancel') {
+    } else if (
+      transaction_status === 'deny' ||
+      transaction_status === 'cancel' ||
+      transaction_status === 'expire'
+    ) {
       await this.repo.handleFailed(order.id);
     }
-
-    return { message: 'Webhook handled successfully' };
   }
 }

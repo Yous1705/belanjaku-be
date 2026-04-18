@@ -53,17 +53,68 @@ export class ProductService {
   }
 
   async getProductDetail(userId: number, slug: string) {
-    return this.repo.findBySlug(slug);
+    const product = await this.repo.findBySlug(slug);
+
+    if (!product) throw new NotFoundException();
+
+    const now = new Date();
+    const isExpired = product.discountExpiry && product.discountExpiry < now;
+
+    return {
+      ...product,
+      currentPrice: isExpired
+        ? product.price
+        : (product.discountPrice ?? product.price),
+      isDiscountActive: product.isDiscount && !isExpired,
+    };
   }
 
   async updateProduct(userId: number, slug: string, dto: UpdateProductDto) {
+    const existingProduct = await this.repo.findBySlug(slug);
+    if (!existingProduct) throw new NotFoundException('Produk tidak ditemukan');
+
+    let expiryDate: Date | undefined | null = undefined;
+    const currentPrice = dto.price ?? existingProduct.price;
+    let finalDiscountPrice: number | undefined | null = dto.discountPrice;
+
+    if (dto.discountPercent !== undefined && dto.discountPercent !== null) {
+      finalDiscountPrice =
+        currentPrice - currentPrice * (dto.discountPercent / 100);
+    }
+
+    if (dto.discountDays !== undefined) {
+      if (dto.discountDays === 0) {
+        expiryDate = null;
+        finalDiscountPrice = null;
+      } else {
+        const date = new Date();
+        date.setDate(date.getDate() + dto.discountDays);
+        date.setHours(23, 59, 59, 999);
+        expiryDate = date;
+      }
+    }
+
     const updateData: Prisma.ProductUpdateInput = {
       name: dto.name,
       price: dto.price,
+      category: dto.category ? { connect: { id: dto.category } } : undefined,
       description: dto.description,
       stock: dto.stock,
-      category: dto.category ? { connect: { id: dto.category } } : undefined,
+      discountPrice: finalDiscountPrice,
+      discountExpiry: expiryDate,
+      isDiscount:
+        finalDiscountPrice && finalDiscountPrice < currentPrice ? true : false,
     };
+
+    if (dto.specifications) {
+      updateData.specifications = {
+        deleteMany: {}, // Hapus semua spek lama milik produk ini
+        create: dto.specifications.map((spec) => ({
+          key: spec.key,
+          value: spec.value,
+        })),
+      };
+    }
 
     if (dto.name) {
       const newSlug = slugify(dto.name, { lower: true });
@@ -97,15 +148,58 @@ export class ProductService {
   ) {
     const products = await this.repo.findAllProducts(userId, query);
 
-    return products.map((p) => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      description: p.description,
-      price: p.price,
-      category: p.category?.name ?? 'Uncategorized',
-      image: p.images?.[0]?.url || '/images/image.jpg',
-      isWishlisted: p.wishlists.length > 0,
-    }));
+    if (!products) throw new NotFoundException();
+
+    const now = new Date();
+
+    return products.map((p) => {
+      const isExpired = p.discountExpiry && p.discountExpiry < now;
+
+      const showDiscount = p.isDiscount && !isExpired;
+
+      return {
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        stock: p.stock,
+        description: p.description,
+        price: p.price,
+        displayPrice: showDiscount ? Number(p.discountPrice) : p.price,
+        discountPrice: showDiscount ? Number(p.discountPrice) : null,
+        isDiscount: showDiscount,
+        category: p.category?.name ?? 'Uncategorized',
+        image: p.images?.[0]?.url || '/images/image.jpg',
+        isWishlisted: p.wishlists.length > 0,
+        discountExpiry: p.discountExpiry,
+      };
+    });
+  }
+
+  async getHitsProduct() {
+    const products = await this.repo.getHitsProduct();
+
+    if (!products) throw new NotFoundException();
+
+    const now = new Date();
+
+    return products.map((p) => {
+      const isExpired = p.discountExpiry && p.discountExpiry < now;
+      const showDiscount = p.isDiscount && !isExpired;
+
+      return {
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        description: p.description,
+        price: p.price,
+        displayPrice: showDiscount ? Number(p.discountPrice) : p.price,
+        discountPrice: showDiscount ? Number(p.discountPrice) : null,
+        isDiscount: showDiscount,
+        category: p.category?.name ?? 'Uncategorized',
+        image: p.images?.[0]?.url || '/images/image.jpg',
+        isWishlisted: p.wishlists.length > 0,
+        discountExpiry: p.discountExpiry,
+      };
+    });
   }
 }

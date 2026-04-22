@@ -103,6 +103,9 @@ export class OrderRepository {
           },
         },
       },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
   }
 

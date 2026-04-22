@@ -79,19 +79,19 @@ export class PaymentRepository {
 
   async handlesSuccess(pkId: number) {
     return this.prisma.$transaction(async (tx) => {
-      // Update Payment: kolom orderId di model Payment kamu adalah Int
+    
       await tx.payment.update({
         where: { orderId: pkId },
         data: { status: PaymentStatus.SUCCESS },
       });
 
-      // Update Order: kolom id adalah Primary Key
+   
       await tx.order.update({
         where: { id: pkId },
         data: { status: OrderStatus.PAID },
       });
 
-      // Ambil items: kolom orderId di OrderItem adalah Int
+  
       const items = await tx.orderItem.findMany({
         where: { orderId: pkId },
       });

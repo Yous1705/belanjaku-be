@@ -1,3 +1,4 @@
+import { UpdateAddresses } from './dto/update-addresses.dto';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -65,6 +66,13 @@ export class UserRepository {
 
   update(data: Prisma.UserUpdateInput, where: Prisma.UserWhereUniqueInput) {
     return this.prisma.user.update({ data, where });
+  }
+
+  UpdateAddresses(
+    data: Prisma.AddressUpdateInput,
+    where: Prisma.AddressWhereUniqueInput,
+  ) {
+    return this.prisma.address.update({ data, where });
   }
 
   deleteAddress(addresId: number) {

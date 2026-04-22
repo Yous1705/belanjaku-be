@@ -17,6 +17,7 @@ import { Roles } from 'src/auth/guard/roles.decorator';
 import { Role } from '@prisma/client';
 import { AddAdressesDto } from './dto/add-addresses.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateAddresses } from './dto/update-addresses.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN, Role.BUYER)
@@ -42,6 +43,15 @@ export class UserController {
   @Put('set-main-address')
   setMain(@Req() req, @Body('addressId') addressId: number) {
     return this.userService.setMainAddress(Number(addressId), req.user.sub);
+  }
+
+  @Put('update-address')
+  updateAddress(
+    @Req() req,
+    @Body('addressId') addressId: number,
+    @Body() dto: UpdateAddresses,
+  ) {
+    return this.userService.updateAddress(dto, Number(addressId), req.user.sub);
   }
 
   @Delete('delete-address')

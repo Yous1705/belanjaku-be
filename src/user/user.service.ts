@@ -5,6 +5,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
 import { AddAdressesDto } from './dto/add-addresses.dto';
+import { UpdateAddresses } from './dto/update-addresses.dto';
 
 @Injectable()
 export class UserService {
@@ -69,6 +70,10 @@ export class UserService {
     }
 
     return this.repo.update(data, { id: userId });
+  }
+
+  async updateAddress(dto: UpdateAddresses, addressId: number, userId: number) {
+    return this.repo.UpdateAddresses(dto, { id: addressId });
   }
 
   async getAddresses(userId: number) {

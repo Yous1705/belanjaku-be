@@ -25,14 +25,27 @@ import { Role } from '@prisma/client';
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
-  @Post('checkout')
-  checout(@Req() req) {
+  @Post('checkout-all')
+  checkoutAll(@Req() req) {
     return this.orderService.checkout(req.user.sub);
   }
 
   @Post('cancel/:id')
   cancelOrder(@Param('id') id: string) {
     return this.orderService.cancelOrder(+id);
+  }
+
+  @Post('buy-now')
+  buyNow(
+    @Req() req,
+    @Body('productId') productId: number,
+    @Body('quantity') quantity: number,
+  ) {
+    return this.orderService.buyNow(
+      req.user.sub,
+      Number(productId),
+      Number(quantity),
+    );
   }
 
   @Get('my-orders')

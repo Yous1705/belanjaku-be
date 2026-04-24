@@ -1,5 +1,9 @@
 import { connect } from 'http2';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrderRepository } from './order.repository';
@@ -18,12 +22,12 @@ export class OrderService {
       const cart = await this.repo.findCartByUserId(userId);
 
       if (!cart || cart.items.length === 0) {
-        throw new Error('Cart is empty');
+        throw new BadRequestException('Cart is empty');
       }
 
       for (const item of cart.items) {
         if (item.quantity > item.product.stock) {
-          throw new Error(
+          throw new BadRequestException(
             `Product ${item.product.name} is out of stock. Available: ${item.product.stock}`,
           );
         }
@@ -66,6 +70,69 @@ export class OrderService {
       });
 
       await this.repo.clearCart(tx, cart.id);
+
+      return order;
+    });
+  }
+
+  async buyNow(userId: number, productId: number, quantity: number) {
+    return this.prisma.$transaction(async (tx) => {
+      const product = await tx.product.findUnique({
+        where: {
+          id: productId,
+        },
+      });
+
+      if (!product) {
+        throw new NotFoundException('Product not found');
+      }
+
+      if (product.stock < quantity) {
+        throw new BadRequestException(
+          `Stock not enough. Available: ${product.stock}`,
+        );
+      }
+
+      const price =
+        product.isDiscount && product.discountPrice
+          ? Number(product.discountPrice)
+          : product.price;
+
+      const totalPrice = price * quantity;
+
+      const order = await tx.order.create({
+        data: {
+          user: {
+            connect: {
+              id: userId,
+            },
+          },
+          totalPrice,
+          status: OrderStatus.PENDING,
+        },
+      });
+
+      await tx.orderItem.create({
+        data: {
+          orderId: order.id,
+          productId: product.id,
+          quantity,
+          price,
+        },
+      });
+
+      await tx.payment.create({
+        data: {
+          order: {
+            connect: {
+              id: order.id,
+            },
+          },
+          amount: totalPrice,
+          status: PaymentStatus.PENDING,
+          method: 'Midtrans',
+        },
+      });
 
       return order;
     });

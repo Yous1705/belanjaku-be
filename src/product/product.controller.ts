@@ -37,6 +37,12 @@ export class ProductController {
   }
 
   @Roles(Role.ADMIN, Role.BUYER)
+  @Get('buy-now-product/:slug')
+  getProductBySlug(@Req() req, @Param('slug') slug: string) {
+    return this.productService.getItemBySlug(slug, req.user.sub);
+  }
+
+  @Roles(Role.ADMIN, Role.BUYER)
   @Get('all-products')
   getAllProducts(
     @Req() req,

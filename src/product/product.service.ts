@@ -175,6 +175,10 @@ export class ProductService {
     });
   }
 
+  async getItemBySlug(slug: string, userId: number) {
+    return this.repo.findBySlug(slug);
+  }
+
   async getHitsProduct() {
     const products = await this.repo.getHitsProduct();
 

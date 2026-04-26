@@ -15,6 +15,7 @@ import { PaymentModule } from './payment/payment.module';
 import { MessageModule } from './message/message.module';
 import { ChatGateway } from './chat/chat.gateway';
 import { ChatModule } from './chat/chat.module';
+import { ReviewModule } from './review/review.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { ChatModule } from './chat/chat.module';
     PaymentModule,
     MessageModule,
     ChatModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

@@ -26,8 +26,8 @@ export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
   @Post('checkout-all')
-  checkoutAll(@Req() req) {
-    return this.orderService.checkoutCartItem(req.user.sub);
+  checkoutAll(@Req() req, @Body('addressId') addressId: number) {
+    return this.orderService.checkoutCartItem(req.user.sub, addressId);
   }
 
   @Post('cancel/:id')
@@ -39,11 +39,13 @@ export class OrderController {
   buyNow(
     @Req() req,
     @Body('productId') productId: number,
+    @Body('addressId') addressId: number,
     @Body('quantity') quantity: number,
   ) {
     return this.orderService.buyNow(
       req.user.sub,
       Number(productId),
+      Number(addressId),
       Number(quantity),
     );
   }

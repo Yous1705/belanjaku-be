@@ -1,3 +1,4 @@
+import { OrderItem } from './../../node_modules/.pnpm/@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3/node_modules/.prisma/client/index.d';
 import { connect } from 'http2';
 import {
   BadRequestException,
@@ -24,7 +25,7 @@ export class OrderService {
     });
   }
 
-  async checkoutCartItem(userId: number) {
+  async checkoutCartItem(userId: number, addressId: number) {
     const result = await this.prisma.$transaction(async (tx) => {
       const cart = await tx.cart.findUnique({
         where: {
@@ -42,6 +43,17 @@ export class OrderService {
 
       if (!cart || cart.items.length === 0) {
         throw new BadRequestException('Cart is empty');
+      }
+
+      const address = await tx.address.findFirst({
+        where: {
+          id: addressId,
+          userId,
+        },
+      });
+
+      if (!address) {
+        throw new BadRequestException('Address not found');
       }
 
       for (const item of cart.items) {
@@ -64,6 +76,10 @@ export class OrderService {
       const order = await tx.order.create({
         data: {
           userId,
+          shippingRecipientName: cart.user.name,
+          shippingAddress: address.address,
+          shippingCity: address.city,
+          shippingPostal: address.postal,
           totalPrice,
           status: OrderStatus.PENDING,
         },
@@ -128,12 +144,15 @@ export class OrderService {
     return {
       order: result.order,
       payment,
-      token: transaction.token,
-      redirect_url: transaction.redirect_url,
     };
   }
 
-  async buyNow(userId: number, productId: number, quantity: number) {
+  async buyNow(
+    userId: number,
+    addressId: number,
+    productId: number,
+    quantity: number,
+  ) {
     const result = await this.prisma.$transaction(async (tx) => {
       const product = await tx.product.findUnique({
         where: {
@@ -143,6 +162,17 @@ export class OrderService {
 
       if (!product) {
         throw new NotFoundException('Product not found');
+      }
+
+      const address = await tx.address.findFirst({
+        where: {
+          id: addressId,
+          userId,
+        },
+      });
+
+      if (!address) {
+        throw new BadRequestException('Address not found');
       }
 
       if (product.stock < quantity) {
@@ -171,6 +201,10 @@ export class OrderService {
       const order = await tx.order.create({
         data: {
           userId,
+          shippingRecipientName: user.name,
+          shippingAddress: address.address,
+          shippingCity: address.city,
+          shippingPostal: address.postal,
           totalPrice,
           status: OrderStatus.PENDING,
         },
@@ -221,8 +255,6 @@ export class OrderService {
     return {
       order: result.order,
       payment,
-      token: transaction.token,
-      redirect_url: transaction.redirect_url,
     };
   }
 

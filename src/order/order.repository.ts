@@ -13,6 +13,30 @@ export class OrderRepository {
     });
   }
 
+  findMyOrderByStatus(userId: number, status: OrderStatus) {
+    return this.prisma.order.findMany({
+      where: { user: { id: userId }, status: status },
+      select: {
+        totalPrice: true,
+        id: true,
+        orderId: true,
+        status: true,
+        updatedAt: true,
+        items: {
+          select: {
+            quantity: true,
+            price: true,
+            product: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
   findCartByUserId(userId: number) {
     return this.prisma.cart.findUnique({
       where: { userId },

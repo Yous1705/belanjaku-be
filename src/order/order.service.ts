@@ -302,4 +302,25 @@ export class OrderService {
 
     return formattedOrder;
   }
+
+  async findMyOrderByStatus(userId: number, status: OrderStatus) {
+    const orders = await this.repo.findMyOrderByStatus(userId, status);
+
+    if (!orders || orders.length === 0) {
+      return [];
+    }
+
+    const formattedOrder = orders.map((order) => {
+      const itemsWithTotal = order.items.map((item) => ({
+        ...item,
+        total: item.price * item.quantity,
+      }));
+      return {
+        ...order,
+        items: itemsWithTotal,
+      };
+    });
+
+    return formattedOrder;
+  }
 }

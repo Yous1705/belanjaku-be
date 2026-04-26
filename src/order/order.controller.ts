@@ -17,7 +17,7 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guard/roles.guard';
 import { Roles } from 'src/auth/guard/roles.decorator';
-import { Role } from '@prisma/client';
+import { OrderStatus, Role } from '@prisma/client';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.BUYER)
@@ -58,5 +58,10 @@ export class OrderController {
   @Get('pending')
   getPendingOrders(@Req() req) {
     return this.orderService.findMyOrderByPendingStatus(req.user.sub);
+  }
+
+  @Get('status/:status')
+  getMyOrderByStatus(@Req() req, @Param('status') status: OrderStatus) {
+    return this.orderService.findMyOrderByStatus(req.user.sub, status);
   }
 }

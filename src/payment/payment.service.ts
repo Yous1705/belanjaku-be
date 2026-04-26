@@ -11,65 +11,107 @@ export class PaymentService {
   constructor(
     private readonly repo: PaymentRepository,
     private readonly prisma: PrismaService,
-  ) {
-    this.snap = new midtransClient.Snap({
-      isProduction: false,
-      serverKey: process.env.MIDTRANS_SERVER_KEY,
-    });
-  }
+  ) {}
 
-  async createPayment(id: number, userId: number) {
-    const order = await this.repo.findOrderById(id);
+  async resumePayment(orderId: number, userId: number) {
+    const payment = await this.repo.findOrder(orderId, userId);
 
-    if (!order) throw new BadRequestException('Order not found');
-    if (order.userId !== userId)
-      throw new BadRequestException('Not Your Order');
-    if (order.status !== 'PENDING')
-      throw new BadRequestException('Order is already processed');
+    if (!payment) {
+      throw new BadRequestException('Payment not found');
+    }
 
-    const midtransOrderId = `${order.orderId}-${Date.now()}`;
+    if (payment.status === PaymentStatus.SUCCESS) {
+      throw new BadRequestException('Order already paid');
+    }
+
+    const isExpired =
+      payment.expiresAt && new Date(payment.expiresAt) < new Date();
+
+    if (!isExpired) {
+      return {
+        token: payment.snapToken,
+        redirect_url: payment.redirectUrl,
+        reused: true,
+      };
+    }
+
+    const newMidtransOrderId = `${payment.order.orderId}-${Date.now()}`;
 
     const transaction = await this.snap.createTransaction({
       transaction_details: {
-        order_id: midtransOrderId,
-        gross_amount: order.totalPrice,
+        order_id: newMidtransOrderId,
+        gross_amount: payment.amount,
       },
+
       customer_details: {
-        email: order.user.email,
-        first_name: order.user.name,
+        first_name: payment.order.user.name,
+        email: payment.order.user.email,
+      },
+
+      expiry: {
+        unit: 'minute',
+        duration: 15,
+      },
+    });
+
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    await this.prisma.payment.update({
+      where: {
+        id: payment.id,
+      },
+      data: {
+        snapToken: transaction.token,
+        redirectUrl: transaction.redirect_url,
+        midtransOrderId: newMidtransOrderId,
+        expiresAt,
       },
     });
 
     return {
       token: transaction.token,
       redirect_url: transaction.redirect_url,
+      reused: false,
     };
   }
 
   async handleWebhook(payload: MidtransWebhookDto) {
     const { order_id, transaction_status } = payload;
 
-    const originalOrderId = order_id.split('-')[0];
-
-    const order = await this.prisma.order.findUnique({
-      where: { orderId: originalOrderId },
+    const payment = await this.prisma.payment.findUnique({
+      where: {
+        midtransOrderId: order_id,
+      },
+      include: {
+        order: true,
+      },
     });
 
-    if (!order) throw new BadRequestException('Order not found');
+    if (!payment) {
+      throw new BadRequestException('Payment not found');
+    }
 
-    if (order.status === OrderStatus.PAID) return { message: 'Already paid' };
+    if (payment.order.status === OrderStatus.PAID) {
+      return {
+        message: 'Already paid',
+      };
+    }
 
     if (
       transaction_status === 'settlement' ||
       transaction_status === 'capture'
     ) {
-      await this.repo.handlesSuccess(order.id);
+      await this.repo.handlesSuccess(payment.order.id);
     } else if (
       transaction_status === 'deny' ||
       transaction_status === 'cancel' ||
       transaction_status === 'expire'
     ) {
-      await this.repo.handleFailed(order.id);
+      await this.repo.handleFailed(payment.order.id);
     }
+
+    return {
+      message: 'Webhook handled',
+    };
   }
 }

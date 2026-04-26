@@ -9,17 +9,36 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrderRepository } from './order.repository';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
+import midtransClient from 'midtrans-client';
 
 @Injectable()
 export class OrderService {
+  private snap;
   constructor(
     private readonly repo: OrderRepository,
     private readonly prisma: PrismaService,
-  ) {}
+  ) {
+    this.snap = new midtransClient.Snap({
+      isProduction: false,
+      serverKey: process.env.MIDTRANS_SERVER_KEY,
+    });
+  }
 
-  async checkout(userId: number) {
-    return this.prisma.$transaction(async (tx) => {
-      const cart = await this.repo.findCartByUserId(userId);
+  async checkoutCartItem(userId: number) {
+    const result = await this.prisma.$transaction(async (tx) => {
+      const cart = await tx.cart.findUnique({
+        where: {
+          userId,
+        },
+        include: {
+          user: true,
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
 
       if (!cart || cart.items.length === 0) {
         throw new BadRequestException('Cart is empty');
@@ -28,55 +47,94 @@ export class OrderService {
       for (const item of cart.items) {
         if (item.quantity > item.product.stock) {
           throw new BadRequestException(
-            `Product ${item.product.name} is out of stock. Available: ${item.product.stock}`,
+            `Product ${item.product.name} stock not enough`,
           );
         }
       }
 
       const totalPrice = cart.items.reduce((total, item) => {
-        return total + item.quantity * item.product.price;
+        const price =
+          item.product.isDiscount && item.product.discountPrice
+            ? Number(item.product.discountPrice)
+            : item.product.price;
+
+        return total + price * item.quantity;
       }, 0);
 
-      const order = await this.repo.createOrder(tx, {
-        user: {
-          connect: {
-            id: userId,
-          },
+      const order = await tx.order.create({
+        data: {
+          userId,
+          totalPrice,
+          status: OrderStatus.PENDING,
         },
-        totalPrice,
-        status: OrderStatus.PENDING,
       });
 
-      const orderItems = cart.items.map((item) => {
-        return {
-          orderId: order.id,
-          productId: item.productId,
-          price: item.product.price,
-          quantity: item.quantity,
-        };
+      await tx.orderItem.createMany({
+        data: cart.items.map((item) => {
+          const price =
+            item.product.isDiscount && item.product.discountPrice
+              ? Number(item.product.discountPrice)
+              : item.product.price;
+
+          return {
+            orderId: order.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            price,
+          };
+        }),
       });
 
-      await this.repo.createOrderItem(tx, orderItems);
+      return {
+        order,
+        user: cart.user,
+        items: cart.items,
+      };
+    });
 
-      await this.repo.createPayment(tx, {
-        order: {
-          connect: {
-            id: order.id,
-          },
-        },
-        amount: totalPrice,
+    const midtransOrderId = `${result.order.orderId}-${Date.now()}`;
+
+    const transaction = await this.snap.createTransaction({
+      transaction_details: {
+        order_id: midtransOrderId,
+        gross_amount: result.order.totalPrice,
+      },
+
+      customer_details: {
+        first_name: result.user.name,
+        email: result.user.email,
+      },
+    });
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        orderId: result.order.id,
+        amount: result.order.totalPrice,
         status: PaymentStatus.PENDING,
         method: 'Midtrans',
-      });
 
-      await this.repo.clearCart(tx, cart.id);
-
-      return order;
+        snapToken: transaction.token,
+        redirectUrl: transaction.redirect_url,
+        midtransOrderId: midtransOrderId,
+      },
     });
+
+    await this.prisma.cartItem.deleteMany({
+      where: {
+        cartId: result.items[0].cartId,
+      },
+    });
+
+    return {
+      order: result.order,
+      payment,
+      token: transaction.token,
+      redirect_url: transaction.redirect_url,
+    };
   }
 
   async buyNow(userId: number, productId: number, quantity: number) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const product = await tx.product.findUnique({
         where: {
           id: productId,
@@ -93,6 +151,16 @@ export class OrderService {
         );
       }
 
+      const user = await tx.user.findUnique({
+        where: {
+          id: userId,
+        },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
       const price =
         product.isDiscount && product.discountPrice
           ? Number(product.discountPrice)
@@ -102,11 +170,7 @@ export class OrderService {
 
       const order = await tx.order.create({
         data: {
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
+          userId,
           totalPrice,
           status: OrderStatus.PENDING,
         },
@@ -115,27 +179,51 @@ export class OrderService {
       await tx.orderItem.create({
         data: {
           orderId: order.id,
-          productId: product.id,
+          productId,
           quantity,
           price,
         },
       });
 
-      await tx.payment.create({
-        data: {
-          order: {
-            connect: {
-              id: order.id,
-            },
-          },
-          amount: totalPrice,
-          status: PaymentStatus.PENDING,
-          method: 'Midtrans',
-        },
-      });
-
-      return order;
+      return {
+        order,
+        user,
+      };
     });
+
+    const midtransOrderId = `${result.order.orderId}-${Date.now()}`;
+
+    const transaction = await this.snap.createTransaction({
+      transaction_details: {
+        order_id: midtransOrderId,
+        gross_amount: result.order.totalPrice,
+      },
+
+      customer_details: {
+        first_name: result.user.name,
+        email: result.user.email,
+      },
+    });
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        orderId: result.order.id,
+        amount: result.order.totalPrice,
+        status: PaymentStatus.PENDING,
+        method: 'Midtrans',
+
+        snapToken: transaction.token,
+        redirectUrl: transaction.redirect_url,
+        midtransOrderId: midtransOrderId,
+      },
+    });
+
+    return {
+      order: result.order,
+      payment,
+      token: transaction.token,
+      redirect_url: transaction.redirect_url,
+    };
   }
 
   async cancelOrder(orderId: number) {

@@ -23,17 +23,9 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.BUYER)
   @Post(':orderId')
-  async createPayment(@Param('orderId') orderId: string, @Req() req: any) {
-    const data = await this.paymentService.createPayment(
-      Number(orderId),
-      req.user.sub,
-    );
-
-    return {
-      success: true,
-      message: 'Payment berhasil dibuat',
-      data,
-    };
+  async resumePayment(@Param('orderId') orderId: number, @Req() req) {
+    const userId = req.user.id;
+    return this.paymentService.resumePayment(orderId, userId);
   }
 
   // webhook midtrans

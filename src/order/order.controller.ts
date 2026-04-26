@@ -27,7 +27,7 @@ export class OrderController {
 
   @Post('checkout-all')
   checkoutAll(@Req() req) {
-    return this.orderService.checkout(req.user.sub);
+    return this.orderService.checkoutCartItem(req.user.sub);
   }
 
   @Post('cancel/:id')

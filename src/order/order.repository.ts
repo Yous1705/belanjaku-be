@@ -7,6 +7,12 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class OrderRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  findProduct(productId: number) {
+    return this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+  }
+
   findCartByUserId(userId: number) {
     return this.prisma.cart.findUnique({
       where: { userId },

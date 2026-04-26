@@ -186,14 +186,22 @@ model OrderItem {
 }
 
 model Payment {
-  id        Int           @id @default(autoincrement())
-  orderId   Int           @unique
-  amount    Float
-  status    PaymentStatus @default(PENDING)
-  method    String       
-  createdAt DateTime      @default(now())
+  id               Int           @id @default(autoincrement())
+  orderId          Int           @unique
 
-  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount           Float
+  status           PaymentStatus @default(PENDING)
+  method           String
+
+  snapToken        String?
+  redirectUrl      String?
+  midtransOrderId  String? @unique
+
+   expiresAt        DateTime?
+
+  createdAt        DateTime @default(now())
+
+  order            Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model Message {

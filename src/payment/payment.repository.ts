@@ -77,21 +77,36 @@ export class PaymentRepository {
     });
   }
 
+  findOrder(orderId: number, userId: number) {
+    return this.prisma.payment.findFirst({
+      where: {
+        order: {
+          id: orderId,
+          userId,
+        },
+      },
+      include: {
+        order: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+  }
+
   async handlesSuccess(pkId: number) {
     return this.prisma.$transaction(async (tx) => {
-    
       await tx.payment.update({
         where: { orderId: pkId },
         data: { status: PaymentStatus.SUCCESS },
       });
 
-   
       await tx.order.update({
         where: { id: pkId },
         data: { status: OrderStatus.PAID },
       });
 
-  
       const items = await tx.orderItem.findMany({
         where: { orderId: pkId },
       });

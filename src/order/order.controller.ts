@@ -58,7 +58,7 @@ export class OrderController {
 
   @Get('my-order/:id')
   getMyOrderDetail(@Req() req, @Param('id') id: number) {
-    return this.orderService.getOrderDetail(req.user.sub, id);
+    return this.orderService.getOrderDetail(Number(id), req.user.sub);
   }
 
   @Get('pending')

@@ -27,11 +27,4 @@ export class PaymentController {
     const userId = req.user.id;
     return this.paymentService.resumePayment(orderId, userId);
   }
-
-  // webhook midtrans
-  // @Post('webhook')
-  // async webhook(@Body() body: any) {
-  //   console.log('Webhook received:', body);
-  //   return this.paymentService.handleWebhook(body);
-  // }
 }

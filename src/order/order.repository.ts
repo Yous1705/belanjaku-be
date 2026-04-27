@@ -56,6 +56,13 @@ export class OrderRepository {
     });
   }
 
+  updateOrder(id: number, data: Prisma.OrderUpdateInput) {
+    return this.prisma.order.update({
+      where: { id },
+      data,
+    });
+  }
+
   findMyOrderByPendingStatus(userId: number) {
     return this.prisma.order.findMany({
       where: {
@@ -139,15 +146,23 @@ export class OrderRepository {
     });
   }
 
-  findOrderById(orderId: number) {
+  findOrderById(Id: number) {
     return this.prisma.order.findUnique({
       where: {
-        id: orderId,
+        id: Id,
       },
       include: {
         items: {
           include: {
-            product: true,
+            product: {
+              include: {
+                category: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
           },
         },
       },

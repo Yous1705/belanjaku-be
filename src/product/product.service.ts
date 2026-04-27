@@ -108,7 +108,7 @@ export class ProductService {
 
     if (dto.specifications) {
       updateData.specifications = {
-        deleteMany: {}, // Hapus semua spek lama milik produk ini
+        deleteMany: {},
         create: dto.specifications.map((spec) => ({
           key: spec.key,
           value: spec.value,

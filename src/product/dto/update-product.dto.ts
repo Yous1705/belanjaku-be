@@ -9,7 +9,6 @@ import {
 } from 'class-validator';
 
 export class UpdateProductDto extends PartialType(CreateProductDto) {
-  // create-product.dto.ts
   @IsNumber()
   @IsOptional()
   @Min(0)

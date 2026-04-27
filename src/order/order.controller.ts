@@ -18,6 +18,7 @@ import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guard/roles.guard';
 import { Roles } from 'src/auth/guard/roles.decorator';
 import { OrderStatus, Role } from '@prisma/client';
+import { userInfo } from 'os';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.BUYER)
@@ -55,6 +56,11 @@ export class OrderController {
     return this.orderService.findAllMyOrders(req.user.sub);
   }
 
+  @Get('my-order/:id')
+  getMyOrderDetail(@Req() req, @Param('id') id: number) {
+    return this.orderService.getOrderDetail(req.user.sub, id);
+  }
+
   @Get('pending')
   getPendingOrders(@Req() req) {
     return this.orderService.findMyOrderByPendingStatus(req.user.sub);
@@ -63,5 +69,14 @@ export class OrderController {
   @Get('status/:status')
   getMyOrderByStatus(@Req() req, @Param('status') status: OrderStatus) {
     return this.orderService.findMyOrderByStatus(req.user.sub, status);
+  }
+
+  @Patch('update-order-status/:id')
+  updateOrderStatus(
+    @Req() req,
+    @Body() dto: UpdateOrderDto,
+    @Param('id') id: number,
+  ) {
+    return this.orderService.updateOrderStatus(id, dto, req.user.sub);
   }
 }

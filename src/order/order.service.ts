@@ -258,9 +258,29 @@ export class OrderService {
     };
   }
 
-  async cancelOrder(orderId: number) {
+  async getOrderDetail(id: number, userId: number) {
+    const order = await this.repo.findOrderById(id);
+
+    if (!order) {
+      throw new BadRequestException('order not found');
+    }
+
+    return {
+      id: order.id,
+      status: order.status,
+      totalPrice: order.totalPrice,
+      orderId: order.id,
+      items: order.items,
+      shippingAddress: order.shippingAddress,
+      shippingCity: order.shippingCity,
+      shippingPostal: order.shippingPostal,
+      shippingRecipientName: order.shippingRecipientName,
+    };
+  }
+
+  async cancelOrder(id: number) {
     return this.prisma.$transaction(async (tx) => {
-      const order = await this.repo.findOrderById(orderId);
+      const order = await this.repo.findOrderById(id);
 
       if (!order) {
         throw new BadRequestException('Order not found');
@@ -270,7 +290,7 @@ export class OrderService {
         throw new BadRequestException('Only pending orders can be cancelled');
       }
 
-      await this.repo.cancleOrder(tx, orderId);
+      await this.repo.cancleOrder(tx, id);
 
       return {
         message: 'Order cancelled successfully',
@@ -322,5 +342,9 @@ export class OrderService {
     });
 
     return formattedOrder;
+  }
+
+  async updateOrderStatus(id: number, data: UpdateOrderDto, userId: number) {
+    return this.repo.updateOrder(id, data);
   }
 }

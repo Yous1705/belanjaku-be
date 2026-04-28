@@ -29,9 +29,21 @@ export class MessageController {
     return this.messageService.getConversationList();
   }
 
+  @Roles(Role.ADMIN)
+  @Get('conversation/:id')
+  getConversationMessages(@Param('id') id: string) {
+    return this.messageService.getMessages(Number(id));
+  }
+
   @Roles(Role.BUYER)
   @Get('my-chat')
   getMyChat(@Req() req) {
     return this.messageService.getMyMessages(req.user.sub);
+  }
+
+  @Roles(Role.BUYER)
+  @Get('my-conversation')
+  getMyConversation(@Req() req) {
+    return this.messageService.getOrCreateConversation(req.user.sub);
   }
 }

@@ -38,4 +38,33 @@ export class ReviewRepository {
       },
     });
   }
+
+  findMyReview(userId: number) {
+    return this.prisma.review.findMany({
+      where: {
+        userId,
+      },
+
+      include: {
+        user: {
+          select: {
+            name: true,
+          },
+        },
+        product: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+  }
+
+  findUserByUserId(userId: number) {
+    return this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+  }
 }

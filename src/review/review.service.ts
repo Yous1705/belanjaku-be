@@ -58,4 +58,20 @@ export class ReviewService {
   findMyOrderByOrderId(userId: number, orderId: number) {
     return this.repo.findMyOrderByOrderId(userId, orderId);
   }
+
+  async findMyReview(userId: number) {
+    const user = await this.repo.findUserByUserId(userId);
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const reviews = await this.repo.findMyReview(userId);
+
+    if (!reviews) {
+      throw new BadRequestException('Review not found');
+    }
+
+    return reviews;
+  }
 }

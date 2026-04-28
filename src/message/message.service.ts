@@ -5,29 +5,17 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class MessageService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async sendMessage(userId: number, content: string) {
-    const conversation = await this.prisma.conversation.upsert({
-      where: {
-        userId,
-      },
-      update: {},
-      create: {
-        userId,
-      },
-    });
-
-    const message = await this.prisma.message.create({
+  async sendMessage(conversationId: number, senderId: number, content: string) {
+    return this.prisma.message.create({
       data: {
-        conversationId: conversation.id,
-        senderId: userId,
+        conversationId,
+        senderId,
         content,
       },
       include: {
         sender: true,
       },
     });
-
-    return message;
   }
 
   async getMessages(conversationId: number) {
@@ -75,6 +63,34 @@ export class MessageService {
       },
       include: {
         sender: true,
+      },
+    });
+  }
+
+  async canAccessConversation(
+    conversationId: number,
+    userId: number,
+    role: string,
+  ) {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+    });
+
+    if (!conversation) return false;
+
+    if (role === 'ADMIN') return true;
+
+    return conversation.userId === userId;
+  }
+
+  async getOrCreateConversation(userId: number) {
+    return this.prisma.conversation.upsert({
+      where: {
+        userId,
+      },
+      update: {},
+      create: {
+        userId,
       },
     });
   }

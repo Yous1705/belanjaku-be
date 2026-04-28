@@ -45,4 +45,9 @@ export class ReviewController {
       dto,
     );
   }
+
+  @Get('my-review')
+  findMyReview(@Req() req) {
+    return this.reviewService.findMyReview(req.user.sub);
+  }
 }

@@ -48,6 +48,35 @@ export class ProductRepository {
     });
   }
 
+  findProductByName(name: string) {
+    return this.prisma.product.findMany({
+      where: {
+        name: {
+          contains: name,
+          mode: 'insensitive',
+        },
+      },
+      include: {
+        category: {
+          select: {
+            name: true,
+          },
+        },
+        images: {
+          select: {
+            url: true,
+          },
+        },
+        specifications: true,
+        reviews: {
+          select: {
+            rating: true,
+          },
+        },
+      },
+    });
+  }
+
   findBySlug(slug: string) {
     return this.prisma.product.findUnique({
       where: { slug },
@@ -83,6 +112,11 @@ export class ProductRepository {
         category: {
           select: {
             name: true,
+          },
+        },
+        reviews: {
+          select: {
+            rating: true,
           },
         },
         images: {

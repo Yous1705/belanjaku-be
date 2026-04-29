@@ -133,6 +133,35 @@ export class ProductService {
     return await this.repo.updateBySlug(slug, updateData);
   }
 
+  async findProductByName(userId: number, name: string) {
+    const product = await this.repo.findProductByName(name);
+    if (!product) throw new NotFoundException('Produk tidak ditemukan');
+
+    const now = new Date();
+
+    const item = product.map((p) => {
+      const isExpired = p.discountExpiry && p.discountExpiry < now;
+      const showDiscount = p.isDiscount && !isExpired;
+      return {
+        id: p.id,
+        name: p.name,
+        images: p.images.map((i) => i.url),
+        slug: p.slug,
+        price: p.price,
+        reviews: {
+          rating:
+            p.reviews.reduce((acc, review) => acc + review.rating, 0) /
+            p.reviews.length,
+        },
+        displayPrice: showDiscount ? Number(p.discountPrice) : p.price,
+        discountPrice: showDiscount ? Number(p.discountPrice) : null,
+        isDiscount: showDiscount,
+      };
+    });
+
+    return item;
+  }
+
   async deleteProduct(userId: number, slug: string) {
     const product = await this.repo.findBySlug(slug);
     if (!product) {
@@ -164,6 +193,11 @@ export class ProductService {
         stock: p.stock,
         description: p.description,
         price: p.price,
+        reviews: {
+          rating:
+            p.reviews.reduce((acc, review) => acc + review.rating, 0) /
+            p.reviews.length,
+        },
         displayPrice: showDiscount ? Number(p.discountPrice) : p.price,
         discountPrice: showDiscount ? Number(p.discountPrice) : null,
         isDiscount: showDiscount,

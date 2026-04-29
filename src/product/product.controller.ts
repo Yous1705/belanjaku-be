@@ -31,6 +31,12 @@ export class ProductController {
   }
 
   @Roles(Role.ADMIN, Role.BUYER)
+  @Get('search/:name')
+  findProductByName(@Req() req, @Param('name') name: string) {
+    return this.productService.findProductByName(req.user.sub, name);
+  }
+
+  @Roles(Role.ADMIN, Role.BUYER)
   @Get('product-detail/:slug')
   getProductDetail(@Req() req, @Param('slug') slug: string) {
     return this.productService.getProductDetail(req.user.sub, slug);

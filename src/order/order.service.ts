@@ -1,4 +1,3 @@
-import { OrderItem } from './../../node_modules/.pnpm/@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3/node_modules/.prisma/client/index.d';
 import { connect } from 'http2';
 import {
   BadRequestException,

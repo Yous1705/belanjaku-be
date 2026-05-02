@@ -41,13 +41,44 @@ export class AdminRepository {
     };
   }
 
-  async getSalesChart() {
-    const payment = await this.prisma.payment.findMany({
+  async getSalesChart(period: string) {
+    const now = new Date();
+
+    let startDate: Date | undefined;
+
+    switch (period) {
+      case '7days':
+        startDate = new Date();
+        startDate.setDate(now.getDate() - 6);
+        break;
+
+      case 'month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+
+      case 'year':
+        startDate = new Date(now.getFullYear(), 0, 1);
+        break;
+
+      case 'all':
+      default:
+        startDate = undefined;
+        break;
+    }
+
+    const orders = await this.prisma.order.findMany({
       where: {
-        status: PaymentStatus.SUCCESS,
+        status: {
+          in: ['PAID', 'COMPLETED'],
+        },
+        ...(startDate && {
+          createdAt: {
+            gte: startDate,
+          },
+        }),
       },
       select: {
-        amount: true,
+        totalPrice: true,
         createdAt: true,
       },
       orderBy: {
@@ -55,23 +86,28 @@ export class AdminRepository {
       },
     });
 
-    const grouped: Record<string, number> = {};
+    const groupedData: Record<string, number> = {};
 
-    payment.forEach((payment) => {
-      const date = payment.createdAt.toISOString().split('T')[0];
+    for (const order of orders) {
+      let key = '';
 
-      if (!grouped[date]) {
-        grouped[date] = 0;
+      if (period === 'year') {
+        key = new Intl.DateTimeFormat('id-ID', {
+          month: 'short',
+        }).format(order.createdAt);
+      } else if (period === 'all') {
+        key = order.createdAt.getFullYear().toString();
+      } else {
+        key = order.createdAt.toISOString().split('T')[0];
       }
-      grouped[date] = payment.amount;
-    });
 
-    return {
-      data: Object.entries(grouped).map(([date, total]) => ({
-        date,
-        total,
-      })),
-    };
+      groupedData[key] = (groupedData[key] || 0) + order.totalPrice;
+    }
+
+    return Object.entries(groupedData).map(([date, total]) => ({
+      date,
+      total,
+    }));
   }
 
   async recentOrder() {

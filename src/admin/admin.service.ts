@@ -31,19 +31,19 @@ export class AdminService {
     };
   }
 
-  async getSalesChart(userId: number) {
+  async getSalesChart(userId: number, period: string) {
     const user = await this.repo.findUserByRole(userId);
 
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
-    const chart = await this.repo.getSalesChart();
+    const chart = await this.repo.getSalesChart(period);
 
     return {
       success: true,
-      message: 'Sales Chart fethced successfully',
-      data: chart.data,
+      message: 'Sales Chart fetched successfully',
+      data: chart,
     };
   }
 

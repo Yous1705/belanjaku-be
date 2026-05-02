@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
@@ -29,8 +30,8 @@ export class AdminController {
   }
 
   @Get('dashboard/sales-chart')
-  getSalesChart(@Req() req) {
-    return this.adminService.getSalesChart(req.user.sub);
+  getSalesChart(@Req() req, @Query('period') period: string) {
+    return this.adminService.getSalesChart(req.user.sub, period);
   }
 
   @Get('dashboard/recent-orders')

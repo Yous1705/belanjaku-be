@@ -18,7 +18,7 @@ import { Roles } from 'src/auth/guard/roles.decorator';
 import { Role } from '@prisma/client';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.BUYER)
+@Roles(Role.BUYER || Role.ADMIN)
 @Controller('cart')
 export class CartController {
   constructor(private readonly cartService: CartService) {}

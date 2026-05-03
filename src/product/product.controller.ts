@@ -9,6 +9,10 @@ import {
   Req,
   UseGuards,
   Query,
+  UseInterceptors,
+  UploadedFiles,
+  BadRequestException,
+  UsePipes,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -18,6 +22,8 @@ import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guard/roles.guard';
 import { Role } from '@prisma/client';
 import { addMoreImagesDto } from './dto/add-more-images.dto';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
@@ -26,8 +32,27 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Post('create-product')
-  createProduct(@Req() req, @Body() data: CreateProductDto) {
-    return this.productService.createProduct(req.user.sub, data);
+  @UseInterceptors(
+    FilesInterceptor('images', 10, {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 40 * 1024 * 1024,
+      },
+      fileFilter(req, file, callback) {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|webp)$/)) {
+          return callback(new BadRequestException('Invalid file type'), false);
+        }
+        callback(null, true);
+      },
+    }),
+  )
+  createProduct(
+    @Req() req,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body() data: CreateProductDto,
+  ) {
+    console.log('Raw Data from Body:', data);
+    return this.productService.createProduct(req.user.sub, data, files);
   }
 
   @Roles(Role.ADMIN, Role.BUYER)
@@ -85,5 +110,11 @@ export class ProductController {
   @Delete('delete-product/:slug')
   deleteProduct(@Req() req, @Param('slug') slug: string) {
     return this.productService.deleteProduct(req.user.sub, slug);
+  }
+
+  @Roles(Role.ADMIN, Role.BUYER)
+  @Get(':productId')
+  getProductById(@Param('productId') productId: number) {
+    return this.productService.getProductById(productId);
   }
 }

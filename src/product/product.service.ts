@@ -10,12 +10,22 @@ import { connect } from 'http2';
 import { Prisma } from '@prisma/client';
 import slugify from 'slugify';
 import { addMoreImagesDto } from './dto/add-more-images.dto';
+import { ImagekitService } from 'src/imagekit/imagekit.service';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class ProductService {
-  constructor(private readonly repo: ProductRepository) {}
+  constructor(
+    private readonly repo: ProductRepository,
+    private readonly imageKitService: ImagekitService,
+    private readonly cloudinary: CloudinaryService,
+  ) {}
 
-  async createProduct(userId: number, data: CreateProductDto) {
+  async createProduct(
+    userId: number,
+    data: CreateProductDto,
+    files: Express.Multer.File[],
+  ) {
     const generatedSlug = slugify(data.name, { lower: true, strict: true });
 
     const isSlugTaken = await this.repo.findBySlug(generatedSlug);
@@ -24,6 +34,22 @@ export class ProductService {
         'Produk dengan nama ini sudah ada, gunakan nama lain',
       );
     }
+
+    const imageUrls = await this.cloudinary.uploadMultiple(files);
+
+    const specsArray = Array.isArray(data.specifications)
+      ? data.specifications
+      : [];
+
+    const cleanSpecifications = specsArray
+      .filter((spec) => spec && spec.key && spec.value) // Pastikan objek dan property ada
+      .map((spec) => ({
+        key: String(spec.key).trim(),
+        value: String(spec.value).trim(),
+      }))
+      .filter((spec) => spec.key !== '' && spec.value !== '');
+
+    console.log('Final Clean Specs for Prisma:', cleanSpecifications);
 
     return this.repo.create({
       name: data.name,
@@ -35,16 +61,14 @@ export class ProductService {
         connect: { id: data.category },
       },
       images: {
-        create: data.images?.map((url) => ({
-          url,
-        })),
+        create: imageUrls.map((url) => ({ url })),
       },
-      specifications: {
-        create: data.specifications?.map((spec) => ({
-          key: spec.key,
-          value: spec.value,
-        })),
-      },
+      specifications:
+        cleanSpecifications.length > 0
+          ? {
+              create: cleanSpecifications,
+            }
+          : undefined,
     });
   }
 
@@ -239,5 +263,46 @@ export class ProductService {
         discountExpiry: p.discountExpiry,
       };
     });
+  }
+
+  async getProductById(productId: number) {
+    const product = await this.repo.findProductById(productId);
+
+    if (!product) {
+      throw new BadRequestException('Invalid ProductId');
+    }
+
+    const now = new Date();
+
+    const isExpired = product.discountExpiry && product.discountExpiry < now;
+
+    const showDiscount = product.isDiscount && !isExpired;
+
+    let discountPercent: number | null = null;
+
+    if (showDiscount && product.discountPrice !== null) {
+      discountPercent = Math.round(
+        ((product.price - Number(product.discountPrice)) / product.price) * 100,
+      );
+    }
+
+    return {
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      images: product.images,
+      description: product.description,
+      category: product.category?.name,
+      stock: product.stock,
+      price: product.price,
+
+      discountPercent,
+
+      displayPrice: showDiscount
+        ? Number(product.discountPrice)
+        : product.price,
+
+      discountPrice: showDiscount ? Number(product.discountPrice) : null,
+    };
   }
 }

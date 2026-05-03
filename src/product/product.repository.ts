@@ -197,4 +197,24 @@ export class ProductRepository {
       },
     });
   }
+
+  findProductById(productId: number) {
+    return this.prisma.product.findUnique({
+      where: {
+        id: productId,
+      },
+      include: {
+        category: {
+          select: {
+            name: true,
+          },
+        },
+        images: {
+          select: {
+            url: true,
+          },
+        },
+      },
+    });
+  }
 }
